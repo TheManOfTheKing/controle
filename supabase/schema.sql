@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   email         TEXT        NOT NULL UNIQUE,
   role          TEXT        NOT NULL DEFAULT 'viewer'
                             CHECK (role IN ('admin', 'editor', 'viewer')),
+  telas_acesso  TEXT[]      DEFAULT '{}',
   ativo         BOOLEAN     NOT NULL DEFAULT true,
   criado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()

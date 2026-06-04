@@ -113,7 +113,24 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
     const restrictedScreens = ['dashboard', 'aulas', 'pagamentos', 'professores', 'pessoal', 'usuarios', 'backup'];
     
     if (restrictedScreens.includes(currentScreen) && !allowedScreens.includes(currentScreen)) {
-      return <Navigate to="/" replace />;
+      if (allowedScreens.length > 0) {
+        return <Navigate to={`/${allowedScreens[0]}`} replace />;
+      }
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-6">
+          <h1 className="text-2xl font-bold text-red-500 mb-2">Acesso Restrito</h1>
+          <p className="text-slate-400 mb-6 text-center">
+            Seu perfil não possui acesso a esta tela, e você não possui nenhuma outra tela liberada.<br/>
+            Contate o administrador ou faça login novamente se houver um erro de conexão.
+          </p>
+          <button 
+            onClick={() => supabase.auth.signOut()} 
+            className="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-md transition-colors"
+          >
+            Sair e Voltar ao Login
+          </button>
+        </div>
+      );
     }
   }
 
