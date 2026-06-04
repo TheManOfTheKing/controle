@@ -5,6 +5,7 @@ import LoginPage from '@/auth/LoginPage';
 import { Layout } from '@/components/layout/Layout';
 
 // Pages
+import DashboardPage from '@/modules/dashboard/DashboardPage';
 import AulasPage from '@/modules/aulas/AulasPage';
 import PagamentosPage from '@/modules/pagamentos/PagamentosPage';
 import ProfessoresPage from '@/modules/professores/ProfessoresPage';
@@ -40,7 +41,8 @@ export default function App() {
               </AuthGuard>
             }
           >
-            <Route index element={<Navigate to="/aulas" replace />} />
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="aulas" element={<AulasPage />} />
             <Route path="pagamentos" element={<PagamentosPage />} />
             <Route path="professores" element={<ProfessoresPage />} />
@@ -48,7 +50,7 @@ export default function App() {
           </Route>
 
           {/* Catch-all route */}
-          <Route path="*" element={<Navigate to="/aulas" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

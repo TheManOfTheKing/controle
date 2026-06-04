@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
-import { Calendar, CreditCard, Users, Lock, LogOut } from 'lucide-react';
+import { Calendar, CreditCard, Users, Lock, LogOut, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +14,7 @@ export function Sidebar({ isMobileOpen, setMobileOpen }: SidebarProps) {
   const { role, signOut } = useAuth();
 
   const navItems = [
+    { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Aulas', to: '/aulas', icon: Calendar },
     { name: 'Pagamentos', to: '/pagamentos', icon: CreditCard },
     { name: 'Professores', to: '/professores', icon: Users },
