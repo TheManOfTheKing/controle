@@ -13,7 +13,7 @@ export function Layout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header setMobileOpen={setIsMobileOpen} />
         
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>
