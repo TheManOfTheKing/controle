@@ -18,6 +18,13 @@ const schema = z.object({
   especialidade: z.string().optional().nullable(),
   documento: z.string().optional().nullable(),
   endereco: z.string().optional().nullable(),
+  cep: z.string().optional().nullable(),
+  logradouro: z.string().optional().nullable(),
+  numero: z.string().optional().nullable(),
+  complemento: z.string().optional().nullable(),
+  bairro: z.string().optional().nullable(),
+  cidade: z.string().optional().nullable(),
+  estado: z.string().optional().nullable(),
   observacoes: z.string().optional().nullable(),
 });
 
@@ -33,7 +40,7 @@ interface ProfessorFormProps {
 export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: ProfessorFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       nome: '',
@@ -42,6 +49,13 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
       especialidade: '',
       documento: '',
       endereco: '',
+      cep: '',
+      logradouro: '',
+      numero: '',
+      complemento: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
       observacoes: '',
     }
   });
@@ -56,6 +70,13 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
           especialidade: professor.especialidade || '',
           documento: professor.documento || '',
           endereco: professor.endereco || '',
+          cep: professor.cep || '',
+          logradouro: professor.logradouro || '',
+          numero: professor.numero || '',
+          complemento: professor.complemento || '',
+          bairro: professor.bairro || '',
+          cidade: professor.cidade || '',
+          estado: professor.estado || '',
           observacoes: professor.observacoes || '',
         });
       } else {
@@ -66,11 +87,41 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
           especialidade: '',
           documento: '',
           endereco: '',
+          cep: '',
+          logradouro: '',
+          numero: '',
+          complemento: '',
+          bairro: '',
+          cidade: '',
+          estado: '',
           observacoes: '',
         });
       }
     }
   }, [open, professor, reset]);
+
+  const cepValue = watch('cep');
+
+  useEffect(() => {
+    if (cepValue && cepValue.replace(/\D/g, '').length === 8) {
+      const fetchAddress = async () => {
+        try {
+          const cleanCep = cepValue.replace(/\D/g, '');
+          const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+          const data = await res.json();
+          if (!data.erro) {
+            setValue('logradouro', data.logradouro || '', { shouldValidate: true });
+            setValue('bairro', data.bairro || '', { shouldValidate: true });
+            setValue('cidade', data.localidade || '', { shouldValidate: true });
+            setValue('estado', data.uf || '', { shouldValidate: true });
+          }
+        } catch (err) {
+          console.error("Erro ao buscar CEP", err);
+        }
+      };
+      fetchAddress();
+    }
+  }, [cepValue, setValue]);
 
   const handleFormSubmit = async (data: FormData) => {
     try {
@@ -87,7 +138,7 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-slate-950 text-slate-100 border-slate-800">
+      <DialogContent className="sm:max-w-[600px] bg-slate-950 text-slate-100 border-slate-800 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{professor ? 'Editar Professor' : 'Novo Professor'}</DialogTitle>
           <DialogDescription className="text-slate-400">
@@ -125,9 +176,45 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="endereco">Endereço</Label>
-            <Input id="endereco" {...register('endereco')} placeholder="Ex: Rua A, 123" className="bg-slate-900 border-slate-800" />
+          <div className="space-y-4 border border-slate-800 rounded-md p-4 bg-slate-900/50">
+            <h3 className="text-sm font-semibold text-slate-300">Endereço</h3>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cep">CEP</Label>
+                <Input id="cep" {...register('cep')} placeholder="00000-000" className="bg-slate-950 border-slate-800" maxLength={9} />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="logradouro">Logradouro</Label>
+                <Input id="logradouro" {...register('logradouro')} placeholder="Rua, Avenida..." className="bg-slate-950 border-slate-800" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="numero">Número</Label>
+                <Input id="numero" {...register('numero')} placeholder="123" className="bg-slate-950 border-slate-800" />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="complemento">Complemento</Label>
+                <Input id="complemento" {...register('complemento')} placeholder="Apto, Sala, Bloco..." className="bg-slate-950 border-slate-800" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bairro">Bairro</Label>
+                <Input id="bairro" {...register('bairro')} placeholder="Bairro" className="bg-slate-950 border-slate-800" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cidade">Cidade</Label>
+                <Input id="cidade" {...register('cidade')} placeholder="Cidade" className="bg-slate-950 border-slate-800" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="estado">Estado</Label>
+                <Input id="estado" {...register('estado')} placeholder="UF" className="bg-slate-950 border-slate-800" maxLength={2} />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

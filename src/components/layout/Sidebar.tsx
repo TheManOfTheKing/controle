@@ -73,6 +73,11 @@ export function Sidebar({ isMobileOpen, setMobileOpen }: SidebarProps) {
             Sair
           </Button>
         </div>
+
+        {/* Footer with "Desenvolvido por AndreSD" */}
+        <div className="p-4 border-t border-slate-800 text-center text-xs text-slate-500 mt-auto">
+          Desenvolvido por <a href="https://wa.me/5512982176890" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition-colors">AndreSD</a>
+        </div>
       </aside>
     </>
   );

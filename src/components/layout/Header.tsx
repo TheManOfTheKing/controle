@@ -1,8 +1,10 @@
 import React from 'react';
 import { useAuth } from '@/auth/useAuth';
-import { Menu, LogOut, ShieldAlert, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { Menu, LogOut, ShieldAlert, ShieldCheck, User as UserIcon, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ProfileModal } from './ProfileModal';
+import { useState } from 'react';
 
 interface HeaderProps {
   setMobileOpen: (open: boolean) => void;
@@ -10,6 +12,7 @@ interface HeaderProps {
 
 export function Header({ setMobileOpen }: HeaderProps) {
   const { user, role, signOut } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const userName = user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário';
 
@@ -55,13 +58,25 @@ export function Header({ setMobileOpen }: HeaderProps) {
         <Button 
           variant="ghost" 
           size="sm"
-          onClick={() => signOut()}
-          className="text-slate-400 hover:text-red-400 hover:bg-red-400/10 hidden sm:flex"
+          onClick={() => setIsProfileOpen(true)}
+          className="text-slate-400 hover:text-indigo-400 hover:bg-indigo-400/10 hidden sm:flex px-2"
+          title="Meu Perfil"
         >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sair
+          <Settings className="w-4 h-4" />
+        </Button>
+
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => signOut()}
+          className="text-slate-400 hover:text-red-400 hover:bg-red-400/10 hidden sm:flex px-2"
+          title="Sair"
+        >
+          <LogOut className="w-4 h-4" />
         </Button>
       </div>
+
+      <ProfileModal open={isProfileOpen} onOpenChange={setIsProfileOpen} />
     </header>
   );
 }
