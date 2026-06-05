@@ -2,16 +2,17 @@ import React, { useState, useMemo } from 'react';
 import { useAulas } from '@/hooks/useAulas';
 import { useProfessores } from '@/hooks/useProfessores';
 import { useAuth } from '@/auth/useAuth';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AULA_STATUS } from '@/types/aulaStatus';
+import { DIAS_SEMANA, getDiaSemana } from '@/lib/diaSemana';
 import { AulaForm } from './AulaForm';
 import { ImportModal } from '@/components/shared/ImportModal';
 import { ExportButton } from '@/components/shared/ExportButton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit2, CheckCircle, XCircle, Upload } from 'lucide-react';
+import { Plus, Search, Edit2, CheckCircle, XCircle, Upload, CalendarDays } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import {
@@ -38,6 +39,8 @@ export default function AulasPage() {
   const [professorFilter, setProfessorFilter] = useState<string>('todos');
   const [monitorFilter, setMonitorFilter] = useState<string>('todos');
   const [mesFilter, setMesFilter] = useState<string>(''); // Formato YYYY-MM
+  const [diaSemanaFilter, setDiaSemanaFilter] = useState<number | 'todos'>('todos');
+  const [agruparPorDia, setAgruparPorDia] = useState(false);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
@@ -66,9 +69,23 @@ export default function AulasPage() {
         matchMes = aulaDate.getFullYear() === parseInt(year) && aulaDate.getMonth() === (parseInt(month) - 1);
       }
 
-      return matchTitle && matchStatus && matchProfessor && matchMonitor && matchMes;
+      const matchDia = diaSemanaFilter === 'todos' || getDay(new Date(a.data_hora)) === diaSemanaFilter;
+
+      return matchTitle && matchStatus && matchProfessor && matchMonitor && matchMes && matchDia;
     });
-  }, [aulas, searchTerm, statusFilter, professorFilter, monitorFilter, mesFilter]);
+  }, [aulas, searchTerm, statusFilter, professorFilter, monitorFilter, mesFilter, diaSemanaFilter]);
+
+  const aulasPorDia = useMemo(() => {
+    if (!agruparPorDia) return null;
+    const grupos: Record<number, AulaWithProfessor[]> = {};
+    filteredAulas.forEach(a => {
+      const dia = getDay(new Date(a.data_hora));
+      grupos[dia] = [...(grupos[dia] ?? []), a];
+    });
+    // Ordenar por dia (1=Segunda...0=Domingo por ultimo)
+    return [1,2,3,4,5,6,0].filter(d => grupos[d]?.length)
+      .map(d => ({ dia: DIAS_SEMANA[d], aulas: grupos[d] }));
+  }, [filteredAulas, agruparPorDia]);
 
   const { monitores } = useMonitores();
 
@@ -183,6 +200,86 @@ export default function AulasPage() {
     );
   }
 
+  const renderRows = (aulasList: AulaWithProfessor[]) => {
+    return aulasList.map((aula) => {
+      const dataLocal = new Date(aula.data_hora);
+      const diaSemana = getDiaSemana(aula.data_hora);
+      return (
+        <TableRow key={aula.id} className="border-slate-800 hover:bg-slate-900/50">
+          <TableCell>
+            <div className="font-medium text-slate-200">{aula.titulo}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${diaSemana.cor}`}>
+                {diaSemana.label}
+              </span>
+              <span className="text-xs text-slate-400">
+                {format(dataLocal, "dd 'de' MMMM, yyyy 'às' HH:mm", { locale: ptBR })}
+                {' • '}{aula.duracao_minutos} min
+              </span>
+            </div>
+          </TableCell>
+          <TableCell className="text-slate-300">
+            {aula.professores?.nome || <span className="text-slate-500 italic">Sem professor</span>}
+          </TableCell>
+          <TableCell className="text-slate-300 text-sm">
+            {getNomeMonitor(aula)}
+          </TableCell>
+          <TableCell>
+            <StatusBadge status={aula.status} />
+            {(() => {
+              const STATUS_PROGRESSO = ['agendada','confirmada','material_enviado','material_postado','aula_postada'];
+              const progressoIdx = STATUS_PROGRESSO.indexOf(aula.status);
+              return progressoIdx >= 0 && (
+                <div className="flex gap-0.5 mt-2">
+                  {STATUS_PROGRESSO.map((_,i) => (
+                    <div key={i} className={`h-1 w-4 rounded-full transition-colors ${i <= progressoIdx ? 'bg-indigo-500' : 'bg-slate-700'}`} />
+                  ))}
+                </div>
+              );
+            })()}
+          </TableCell>
+          {canWrite && (
+            <TableCell className="text-right">
+              <div className="flex items-center justify-end gap-2">
+                {aula.status !== 'cancelada' && aula.status !== 'aula_postada' && (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleQuickStatus(aula, 'aula_postada')}
+                      className="text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10"
+                      title="Marcar como Aula Postada"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleQuickStatus(aula, 'cancelada')}
+                      className="text-slate-400 hover:text-red-400 hover:bg-red-400/10"
+                      title="Cancelar Aula"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </Button>
+                  </>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => handleOpenEdit(aula)}
+                  className="text-slate-400 hover:text-indigo-400 hover:bg-indigo-400/10"
+                  title="Editar"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </TableCell>
+          )}
+        </TableRow>
+      );
+    });
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -263,101 +360,82 @@ export default function AulasPage() {
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
+
+        <select 
+          value={diaSemanaFilter}
+          onChange={e => setDiaSemanaFilter(e.target.value === 'todos' ? 'todos' : Number(e.target.value))}
+          className="h-10 px-3 py-2 rounded-md bg-slate-950 border border-slate-800 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-44"
+        >
+          <option value="todos">Todos os Dias</option>
+          {DIAS_SEMANA.filter(d => d.value !== 0).map(d => (
+            <option key={d.value} value={d.value}>{d.label}</option>
+          ))}
+          <option value={0}>Domingo</option>
+        </select>
       </div>
 
-      <div className="rounded-md border border-slate-800 overflow-hidden overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-slate-900/80">
-            <TableRow className="border-slate-800 hover:bg-slate-900/80">
-              <TableHead className="text-slate-400">Título / Data</TableHead>
-              <TableHead className="text-slate-400">Professor</TableHead>
-              <TableHead className="text-slate-400">Monitor</TableHead>
-              <TableHead className="text-slate-400">Status</TableHead>
-              {canWrite && <TableHead className="text-slate-400 text-right">Ações</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody className="bg-slate-950">
-            {filteredAulas.length === 0 ? (
-              <TableRow className="border-slate-800 hover:bg-slate-900/50">
-                <TableCell colSpan={canWrite ? 5 : 4} className="h-24 text-center text-slate-500">
-                  Nenhuma aula encontrada.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredAulas.map((aula) => {
-                const dataLocal = new Date(aula.data_hora);
-                return (
-                  <TableRow key={aula.id} className="border-slate-800 hover:bg-slate-900/50">
-                    <TableCell>
-                      <div className="font-medium text-slate-200">{aula.titulo}</div>
-                      <div className="text-xs text-slate-400 mt-1">
-                        {format(dataLocal, "dd 'de' MMMM, yyyy 'às' HH:mm", { locale: ptBR })}
-                        {' • '}{aula.duracao_minutos} min
-                      </div>
+      <div className="flex justify-end mb-2">
+        <Button variant={agruparPorDia ? "default" : "outline"} size="sm" onClick={() => setAgruparPorDia(!agruparPorDia)} className="text-xs">
+          <CalendarDays className="w-3 h-3 mr-1" />
+          Agrupar por dia
+        </Button>
+      </div>
+
+      <div className="space-y-4">
+        {agruparPorDia ? (
+          aulasPorDia?.map(grupo => (
+            <div key={grupo.dia.value} className="space-y-2">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${grupo.dia.cor}`}>
+                <CalendarDays className="w-4 h-4" />
+                <span className="font-semibold text-sm">{grupo.dia.label}</span>
+                <span className="text-xs opacity-70">
+                  ({grupo.aulas.length} aula{grupo.aulas.length !== 1 ? "s" : ""})
+                </span>
+              </div>
+              <div className="rounded-md border border-slate-800 overflow-hidden overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-900/80">
+                    <TableRow className="border-slate-800 hover:bg-slate-900/80">
+                      <TableHead className="text-slate-400">Título / Data</TableHead>
+                      <TableHead className="text-slate-400">Professor</TableHead>
+                      <TableHead className="text-slate-400">Monitor</TableHead>
+                      <TableHead className="text-slate-400">Status</TableHead>
+                      {canWrite && <TableHead className="text-slate-400 text-right">Ações</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="bg-slate-950">
+                    {renderRows(grupo.aulas)}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-md border border-slate-800 overflow-hidden overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-slate-900/80">
+                <TableRow className="border-slate-800 hover:bg-slate-900/80">
+                  <TableHead className="text-slate-400">Título / Data</TableHead>
+                  <TableHead className="text-slate-400">Professor</TableHead>
+                  <TableHead className="text-slate-400">Monitor</TableHead>
+                  <TableHead className="text-slate-400">Status</TableHead>
+                  {canWrite && <TableHead className="text-slate-400 text-right">Ações</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody className="bg-slate-950">
+                {filteredAulas.length === 0 ? (
+                  <TableRow className="border-slate-800 hover:bg-slate-900/50">
+                    <TableCell colSpan={canWrite ? 5 : 4} className="h-24 text-center text-slate-500">
+                      Nenhuma aula encontrada.
                     </TableCell>
-                    <TableCell className="text-slate-300">
-                      {aula.professores?.nome || <span className="text-slate-500 italic">Sem professor</span>}
-                    </TableCell>
-                    <TableCell className="text-slate-300 text-sm">
-                      {getNomeMonitor(aula)}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={aula.status} />
-                      {(() => {
-                        const STATUS_PROGRESSO = ['agendada','confirmada','material_enviado','material_postado','aula_postada'];
-                        const progressoIdx = STATUS_PROGRESSO.indexOf(aula.status);
-                        return progressoIdx >= 0 && (
-                          <div className="flex gap-0.5 mt-2">
-                            {STATUS_PROGRESSO.map((_,i) => (
-                              <div key={i} className={`h-1 w-4 rounded-full transition-colors ${i <= progressoIdx ? 'bg-indigo-500' : 'bg-slate-700'}`} />
-                            ))}
-                          </div>
-                        );
-                      })()}
-                    </TableCell>
-                    {canWrite && (
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {aula.status !== 'cancelada' && aula.status !== 'aula_postada' && (
-                            <>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleQuickStatus(aula, 'aula_postada')}
-                                className="text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10"
-                                title="Marcar como Aula Postada"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleQuickStatus(aula, 'cancelada')}
-                                className="text-slate-400 hover:text-red-400 hover:bg-red-400/10"
-                                title="Cancelar Aula"
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleOpenEdit(aula)}
-                            className="text-slate-400 hover:text-indigo-400 hover:bg-indigo-400/10"
-                            title="Editar"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
                   </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                ) : (
+                  renderRows(filteredAulas)
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
       <AlertDialog open={confirmDialog.isOpen} onOpenChange={(isOpen) => !isOpen && setConfirmDialog(prev => ({ ...prev, isOpen: false }))}>
