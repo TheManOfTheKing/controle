@@ -6,6 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+ATUALIZACOES.md
 docs/
 mesa-de-trabalho/
 referencia-stitch/

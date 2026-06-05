@@ -1,76 +1,66 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { professorService } from '@/modules/professores/professorService';
 import type { Database } from '@/types/database';
 
-type Professor = Database['public']['Tables']['professores']['Row'];
 type ProfessorInsert = Database['public']['Tables']['professores']['Insert'];
 type ProfessorUpdate = Database['public']['Tables']['professores']['Update'];
 
+const QUERY_KEY = ['professores'] as const;
+
 export function useProfessores() {
-  const [professores, setProfessores] = useState<Professor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await professorService.getAll();
-      setProfessores(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: professores = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: professorService.getAll,
+  });
 
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+  const error = queryError ? (queryError as Error).message : null;
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Omit<ProfessorInsert, 'id' | 'criado_em' | 'atualizado_em'>) =>
+      professorService.create(data),
+    onSuccess: invalidate,
+  });
+
+  const insertManyMutation = useMutation({
+    mutationFn: (data: Omit<ProfessorInsert, 'id' | 'criado_em' | 'atualizado_em'>[]) =>
+      professorService.insertMany(data),
+    onSuccess: invalidate,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ProfessorUpdate> }) =>
+      professorService.update(id, data),
+    onSuccess: invalidate,
+  });
+
+  const toggleAtivoMutation = useMutation({
+    mutationFn: ({ id, statusAtual }: { id: string; statusAtual: boolean }) =>
+      professorService.toggleAtivo(id, statusAtual),
+    onSuccess: invalidate,
+  });
+
+  // Interface pública idêntica ao hook anterior
   const create = async (data: Omit<ProfessorInsert, 'id' | 'criado_em' | 'atualizado_em'>) => {
-    try {
-      setError(null);
-      await professorService.create(data);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await createMutation.mutateAsync(data);
   };
 
   const insertMany = async (data: Omit<ProfessorInsert, 'id' | 'criado_em' | 'atualizado_em'>[]) => {
-    try {
-      setError(null);
-      await professorService.insertMany(data);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await insertManyMutation.mutateAsync(data);
   };
 
   const update = async (id: string, data: Partial<ProfessorUpdate>) => {
-    try {
-      setError(null);
-      await professorService.update(id, data);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await updateMutation.mutateAsync({ id, data });
   };
 
   const toggleAtivo = async (id: string, statusAtual: boolean) => {
-    try {
-      setError(null);
-      await professorService.toggleAtivo(id, statusAtual);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await toggleAtivoMutation.mutateAsync({ id, statusAtual });
   };
+
+  const fetchAll = () => queryClient.invalidateQueries({ queryKey: QUERY_KEY });
 
   return {
     professores,

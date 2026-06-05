@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { NumericFormat } from 'react-number-format';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +15,40 @@ import { toast } from 'sonner';
 import type { Database } from '@/types/database';
 
 type PagamentoRow = Database['public']['Tables']['pagamentos']['Row'];
+
+// Componente de input de moeda BRL sem dependência externa
+function CurrencyInput({ value, onChange, className, placeholder }: {
+  value: number;
+  onChange: (v: number) => void;
+  className?: string;
+  placeholder?: string;
+}) {
+  const format = (n: number) =>
+    n ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '';
+  const [display, setDisplay] = useState(() => format(value));
+
+  useEffect(() => { setDisplay(format(value)); }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const numeric = raw ? parseFloat(raw) / 100 : 0;
+    setDisplay(raw ? format(numeric) : '');
+    onChange(numeric);
+  };
+
+  return (
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm select-none">R$</span>
+      <input
+        className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm pl-9 ${className ?? ''}`}
+        placeholder={placeholder ?? '0,00'}
+        value={display}
+        onChange={handleChange}
+        inputMode="numeric"
+      />
+    </div>
+  );
+}
 
 const schema = z.object({
   descricao: z.string().min(1, 'Descrição é obrigatória'),
@@ -167,19 +200,10 @@ export function PagamentoForm({ open, onOpenChange, pagamento, onSubmit }: Pagam
                 name="valor"
                 control={control}
                 render={({ field: { onChange, value } }) => (
-                  <NumericFormat
-                    customInput={Input}
+                  <CurrencyInput
                     className="bg-slate-900 border-slate-800"
-                    placeholder="R$ 0,00"
-                    value={value}
-                    thousandSeparator="."
-                    decimalSeparator=","
-                    prefix="R$ "
-                    decimalScale={2}
-                    fixedDecimalScale
-                    onValueChange={(values) => {
-                      onChange(values.floatValue || 0);
-                    }}
+                    value={value ?? 0}
+                    onChange={onChange}
                   />
                 )}
               />

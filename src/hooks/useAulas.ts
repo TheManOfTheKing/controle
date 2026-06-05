@@ -1,75 +1,66 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { aulaService, type AulaWithProfessor } from '@/modules/aulas/aulaService';
 import type { Database } from '@/types/database';
 
 type AulaInsert = Database['public']['Tables']['aulas']['Insert'];
 type AulaUpdate = Database['public']['Tables']['aulas']['Update'];
 
+const QUERY_KEY = ['aulas'] as const;
+
 export function useAulas() {
-  const [aulas, setAulas] = useState<AulaWithProfessor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await aulaService.getAll();
-      setAulas(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: aulas = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: aulaService.getAll,
+  });
 
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+  const error = queryError ? (queryError as Error).message : null;
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Omit<AulaInsert, 'id' | 'criado_em' | 'atualizado_em'>) =>
+      aulaService.create(data),
+    onSuccess: invalidate,
+  });
+
+  const insertManyMutation = useMutation({
+    mutationFn: (data: Omit<AulaInsert, 'id' | 'criado_em' | 'atualizado_em'>[]) =>
+      aulaService.insertMany(data),
+    onSuccess: invalidate,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<AulaUpdate> }) =>
+      aulaService.update(id, data),
+    onSuccess: invalidate,
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      aulaService.updateStatus(id, status),
+    onSuccess: invalidate,
+  });
+
+  // Interface pública idêntica ao hook anterior
   const create = async (data: Omit<AulaInsert, 'id' | 'criado_em' | 'atualizado_em'>) => {
-    try {
-      setError(null);
-      await aulaService.create(data);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await createMutation.mutateAsync(data);
   };
 
   const insertMany = async (data: Omit<AulaInsert, 'id' | 'criado_em' | 'atualizado_em'>[]) => {
-    try {
-      setError(null);
-      await aulaService.insertMany(data);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await insertManyMutation.mutateAsync(data);
   };
 
   const update = async (id: string, data: Partial<AulaUpdate>) => {
-    try {
-      setError(null);
-      await aulaService.update(id, data);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await updateMutation.mutateAsync({ id, data });
   };
 
   const updateStatus = async (id: string, status: string) => {
-    try {
-      setError(null);
-      await aulaService.updateStatus(id, status);
-      await fetchAll();
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    }
+    await updateStatusMutation.mutateAsync({ id, status });
   };
+
+  const fetchAll = () => queryClient.invalidateQueries({ queryKey: QUERY_KEY });
 
   return {
     aulas,
