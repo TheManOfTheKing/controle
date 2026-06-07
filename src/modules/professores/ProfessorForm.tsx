@@ -15,7 +15,7 @@ type Professor = Database['public']['Tables']['professores']['Row'];
 
 const schema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
-  email: z.union([z.string().email('E-mail inválido'), z.literal('')]).nullable().optional().transform(v => (!v || v.trim() === '') ? null : v),
+  email: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.union([z.string().email('E-mail inválido'), z.literal('')]).nullable().optional().transform(v => (!v || v === '') ? null : v)),
   telefone: z.string().optional().nullable(),
   especialidade: z.string().optional().nullable(),
   documento: z.string().optional().nullable(),
@@ -28,9 +28,9 @@ const schema = z.object({
   cidade: z.string().optional().nullable(),
   estado: z.string().optional().nullable(),
   observacoes: z.string().optional().nullable(),
-  instagram_handle: z.string().nullable().optional().transform(v => (!v || v.trim() === '') ? null : v).refine(v => v === null || /^[a-zA-Z0-9_.]{1,30}$/.test(v), 'Handle inválido'),
-  foto_url: z.union([z.string().url('URL inválida'), z.literal('')]).nullable().optional().transform(v => (!v || v.trim() === '') ? null : v),
-  pix_tipo: z.union([z.enum(['cpf','cnpj','email','telefone','aleatoria']), z.literal('')]).nullable().optional().transform(v => (!v || v === '') ? null : v),
+  instagram_handle: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().nullable().optional().transform(v => (!v || v === '') ? null : v).refine(v => v === null || /^[a-zA-Z0-9_.]{1,30}$/.test(v), 'Handle inválido')),
+  foto_url: z.string().nullable().optional().transform(v => (!v || v.trim() === '') ? null : v),
+  pix_tipo: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.union([z.enum(['cpf','cnpj','email','telefone','aleatoria']), z.literal('')]).nullable().optional().transform(v => (!v || v === '') ? null : v)),
   pix_chave: z.string().optional().nullable(),
 });
 
@@ -180,6 +180,19 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
     }
   };
 
+  const onInvalid = (formErrors: any) => {
+    console.error("Erros de validação Zod:", formErrors);
+    
+    // Pega a primeira mensagem de erro para exibir ao usuário
+    const firstErrorMsg = Object.values(formErrors)[0] 
+      ? (Object.values(formErrors)[0] as any).message 
+      : "Algum campo preenchido está inválido";
+      
+    import('sonner').then(({ toast }) => {
+      toast.error(`Não foi possível salvar: ${firstErrorMsg}`);
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] bg-slate-950 text-slate-100 border-slate-800 max-h-[90vh] overflow-y-auto">
@@ -190,7 +203,7 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit, onInvalid)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome *</Label>
             <Input id="nome" {...register('nome')} placeholder="Ex: João da Silva" className="bg-slate-900 border-slate-800" />
