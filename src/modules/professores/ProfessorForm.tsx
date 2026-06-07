@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 import { Upload, Instagram, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/types/database';
-import { isValidCPF, maskCPF, maskCEP } from '@/lib/utils';
+import { isValidCPF, maskCPF, maskCEP, maskTelefone } from '@/lib/utils';
 
 type Professor = Database['public']['Tables']['professores']['Row'];
 
@@ -19,6 +19,7 @@ const schema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   email: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.union([z.string().email('E-mail inválido'), z.literal('')]).nullable().optional().transform(v => (!v || v === '') ? null : v)),
   telefone: z.string().optional().nullable(),
+  is_whatsapp: z.boolean().default(false),
   especialidade: z.string().optional().nullable(),
   documento: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().nullable().optional().transform(v => (!v || v === '') ? null : v).refine(v => v === null || isValidCPF(v), 'CPF inválido')),
   endereco: z.string().optional().nullable(),
@@ -57,6 +58,7 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
       nome: '',
       email: '',
       telefone: '',
+      is_whatsapp: false,
       especialidade: '',
       documento: '',
       endereco: '',
@@ -85,6 +87,7 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
           nome: professor.nome,
           email: professor.email || '',
           telefone: professor.telefone || '',
+          is_whatsapp: professor.is_whatsapp || false,
           especialidade: professor.especialidade || '',
           documento: professor.documento || '',
           endereco: professor.endereco || '',
@@ -107,6 +110,7 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
           nome: '',
           email: '',
           telefone: '',
+          is_whatsapp: false,
           especialidade: '',
           documento: '',
           endereco: '',
@@ -218,7 +222,22 @@ export function ProfessorForm({ open, onOpenChange, professor, onSubmit }: Profe
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">Telefone</Label>
-              <Input id="telefone" {...register('telefone')} placeholder="Ex: (11) 99999-9999" className="bg-slate-900 border-slate-800" />
+              <Input id="telefone" {...register('telefone', {
+                onChange: (e) => {
+                  e.target.value = maskTelefone(e.target.value);
+                }
+              })} placeholder="Ex: (11) 99999-9999" className="bg-slate-900 border-slate-800" />
+              <div className="flex items-center space-x-2 pt-1">
+                <input 
+                  type="checkbox" 
+                  id="is_whatsapp" 
+                  {...register('is_whatsapp')}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-slate-950" 
+                />
+                <Label htmlFor="is_whatsapp" className="text-sm font-normal text-slate-300 cursor-pointer">
+                  Este número é WhatsApp
+                </Label>
+              </div>
             </div>
           </div>
 

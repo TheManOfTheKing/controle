@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS professores (
   foto_url      TEXT,
   pix_tipo      TEXT        CHECK (pix_tipo IN ('cpf','cnpj','email','telefone','aleatoria') OR pix_tipo IS NULL),
   pix_chave     TEXT,
+  is_whatsapp   BOOLEAN     DEFAULT false,
   ativo         BOOLEAN     NOT NULL DEFAULT true,
   criado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -252,6 +253,7 @@ CREATE TABLE IF NOT EXISTS pessoal (
   status          TEXT          NOT NULL DEFAULT 'ativo'
                                 CHECK (status IN ('ativo', 'inativo', 'ferias', 'afastado')),
   observacoes     TEXT,
+  is_whatsapp     BOOLEAN       DEFAULT false,
   criado_em       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   atualizado_em   TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );

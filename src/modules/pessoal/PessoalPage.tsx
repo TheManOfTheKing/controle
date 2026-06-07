@@ -8,7 +8,7 @@ import { ExportButton } from '@/components/shared/ExportButton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit2, ShieldAlert, Power, Upload } from 'lucide-react';
+import { Plus, Search, Edit2, ShieldAlert, Power, Upload, MessageCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import {
@@ -278,7 +278,22 @@ export default function PessoalPage() {
                   <TableCell className="text-slate-400">
                     <div className="flex flex-col gap-1 text-xs">
                       {funcionario.email && <span>{funcionario.email}</span>}
-                      {funcionario.telefone && <span>{funcionario.telefone}</span>}
+                      {funcionario.telefone && (
+                        funcionario.is_whatsapp ? (
+                          <a 
+                            href={`https://wa.me/55${funcionario.telefone.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 hover:underline truncate"
+                            title="Conversar no WhatsApp"
+                          >
+                            <MessageCircle className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{funcionario.telefone}</span>
+                          </a>
+                        ) : (
+                          <span className="truncate">{funcionario.telefone}</span>
+                        )
+                      )}
                       {!funcionario.email && !funcionario.telefone && <span className="text-slate-600">-</span>}
                     </div>
                   </TableCell>

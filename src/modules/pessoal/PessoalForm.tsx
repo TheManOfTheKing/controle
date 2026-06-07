@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/types/database';
-import { isValidCPF, maskCPF, maskCEP } from '@/lib/utils';
+import { isValidCPF, maskCPF, maskCEP, maskTelefone } from '@/lib/utils';
 
 type PessoalRow = Database['public']['Tables']['pessoal']['Row'];
 
@@ -54,6 +54,7 @@ const schema = z.object({
   cargo: z.string().optional().nullable(),
   email: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().email('E-mail inválido').optional().or(z.literal('')).transform(v => (!v || v === '') ? null : v)),
   telefone: z.string().optional().nullable(),
+  is_whatsapp: z.boolean().default(false),
   documento: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().nullable().optional().transform(v => (!v || v === '') ? null : v).refine(v => v === null || isValidCPF(v), 'CPF inválido')),
   salario: z.number().optional().nullable(),
   data_admissao: z.string().optional().nullable(),
@@ -88,6 +89,7 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
       cargo: '',
       email: '',
       telefone: '',
+      is_whatsapp: false,
       documento: '',
       salario: null,
       data_admissao: '',
@@ -114,6 +116,7 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
           cargo: funcionario.cargo || '',
           email: funcionario.email || '',
           telefone: funcionario.telefone || '',
+          is_whatsapp: funcionario.is_whatsapp || false,
           documento: funcionario.documento || '',
           salario: funcionario.salario,
           data_admissao: funcionario.data_admissao || '',
@@ -134,6 +137,7 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
           cargo: '',
           email: '',
           telefone: '',
+          is_whatsapp: false,
           documento: '',
           salario: null,
           data_admissao: '',
@@ -232,7 +236,22 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
             </div>
             <div className="space-y-2">
               <Label htmlFor="telefone">Telefone</Label>
-              <Input id="telefone" {...register('telefone')} placeholder="Ex: (11) 99999-9999" className="bg-slate-900 border-slate-800" />
+              <Input id="telefone" {...register('telefone', {
+                onChange: (e) => {
+                  e.target.value = maskTelefone(e.target.value);
+                }
+              })} placeholder="Ex: (11) 99999-9999" className="bg-slate-900 border-slate-800" />
+              <div className="flex items-center space-x-2 pt-1">
+                <input 
+                  type="checkbox" 
+                  id="is_whatsapp_pessoal" 
+                  {...register('is_whatsapp')}
+                  className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-slate-950" 
+                />
+                <Label htmlFor="is_whatsapp_pessoal" className="text-sm font-normal text-slate-300 cursor-pointer">
+                  Este número é WhatsApp
+                </Label>
+              </div>
             </div>
           </div>
 

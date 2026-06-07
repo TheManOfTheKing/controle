@@ -8,7 +8,7 @@ import { ExportButton } from '@/components/shared/ExportButton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit2, Ban, CheckCircle2, Upload, Instagram, QrCode } from 'lucide-react';
+import { Plus, Search, Edit2, Ban, CheckCircle2, Upload, Instagram, QrCode, MessageCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import {
@@ -243,7 +243,22 @@ export default function ProfessoresPage() {
                   <TableCell className="text-slate-400">
                     <div className="flex flex-col gap-1 text-xs min-w-0">
                       {professor.email && <span className="truncate" title={professor.email}>{professor.email}</span>}
-                      {professor.telefone && <span className="truncate">{professor.telefone}</span>}
+                      {professor.telefone && (
+                        professor.is_whatsapp ? (
+                          <a 
+                            href={`https://wa.me/55${professor.telefone.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 hover:underline truncate"
+                            title="Conversar no WhatsApp"
+                          >
+                            <MessageCircle className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{professor.telefone}</span>
+                          </a>
+                        ) : (
+                          <span className="truncate">{professor.telefone}</span>
+                        )
+                      )}
                       {!professor.email && !professor.telefone && <span className="text-slate-600">-</span>}
                     </div>
                   </TableCell>

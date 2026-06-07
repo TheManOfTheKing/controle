@@ -180,6 +180,7 @@ export type Database = {
           email: string | null
           estado: string | null
           id: string
+          is_whatsapp: boolean | null
           logradouro: string | null
           nome: string
           numero: string | null
@@ -202,6 +203,7 @@ export type Database = {
           email?: string | null
           estado?: string | null
           id?: string
+          is_whatsapp?: boolean | null
           logradouro?: string | null
           nome: string
           numero?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           email?: string | null
           estado?: string | null
           id?: string
+          is_whatsapp?: boolean | null
           logradouro?: string | null
           nome?: string
           numero?: string | null
@@ -251,6 +254,7 @@ export type Database = {
           foto_url: string | null
           id: string
           instagram_handle: string | null
+          is_whatsapp: boolean | null
           logradouro: string | null
           nome: string
           numero: string | null
@@ -275,6 +279,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           instagram_handle?: string | null
+          is_whatsapp?: boolean | null
           logradouro?: string | null
           nome: string
           numero?: string | null
@@ -299,6 +304,7 @@ export type Database = {
           foto_url?: string | null
           id?: string
           instagram_handle?: string | null
+          is_whatsapp?: boolean | null
           logradouro?: string | null
           nome?: string
           numero?: string | null
