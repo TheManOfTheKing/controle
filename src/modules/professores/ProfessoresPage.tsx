@@ -201,14 +201,14 @@ export default function ProfessoresPage() {
       </div>
 
       <div className="rounded-md border border-slate-800 overflow-hidden">
-        <Table>
+        <Table className="table-fixed w-full">
           <TableHeader className="bg-slate-900/80">
             <TableRow className="border-slate-800 hover:bg-slate-900/80">
-              <TableHead className="text-slate-400">Nome</TableHead>
-              <TableHead className="text-slate-400">Contato</TableHead>
-              <TableHead className="text-slate-400 hidden sm:table-cell">Especialidade</TableHead>
-              <TableHead className="text-slate-400">Status</TableHead>
-              {canWrite && <TableHead className="text-slate-400 text-right">Ações</TableHead>}
+              <TableHead className="text-slate-400 w-[30%]">Nome</TableHead>
+              <TableHead className="text-slate-400 w-[20%]">Contato</TableHead>
+              <TableHead className="text-slate-400 hidden sm:table-cell w-[25%]">Especialidade</TableHead>
+              <TableHead className="text-slate-400 w-[10%]">Status</TableHead>
+              {canWrite && <TableHead className="text-slate-400 text-right w-[15%]">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody className="bg-slate-950">
@@ -229,26 +229,28 @@ export default function ProfessoresPage() {
                           : <span className="text-xs font-bold text-slate-400 flex items-center justify-center h-full">{getInitials(professor.nome)}</span>
                         }
                       </div>
-                      <div>
-                        <div className="font-medium text-slate-200">{professor.nome}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-slate-200 truncate" title={professor.nome}>{professor.nome}</div>
                         {professor.instagram_handle && (
                           <a href={`https://instagram.com/${professor.instagram_handle}`}
-                             target="_blank" rel="noreferrer" className="text-xs text-indigo-400 hover:underline flex items-center gap-1 mt-0.5">
-                            <Instagram className="w-3 h-3" /> @{professor.instagram_handle}
+                             target="_blank" rel="noreferrer" className="text-xs text-indigo-400 hover:underline flex items-center gap-1 mt-0.5 truncate" title={`@${professor.instagram_handle}`}>
+                            <Instagram className="w-3 h-3 flex-shrink-0" /> <span className="truncate">@{professor.instagram_handle}</span>
                           </a>
                         )}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-slate-400">
-                    <div className="flex flex-col gap-1 text-xs">
-                      {professor.email && <span>{professor.email}</span>}
-                      {professor.telefone && <span>{professor.telefone}</span>}
+                    <div className="flex flex-col gap-1 text-xs min-w-0">
+                      {professor.email && <span className="truncate" title={professor.email}>{professor.email}</span>}
+                      {professor.telefone && <span className="truncate">{professor.telefone}</span>}
                       {!professor.email && !professor.telefone && <span className="text-slate-600">-</span>}
                     </div>
                   </TableCell>
                   <TableCell className="text-slate-400 hidden sm:table-cell">
-                    {professor.especialidade || '-'}
+                    <div className="truncate" title={professor.especialidade || ''}>
+                      {professor.especialidade || '-'}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <StatusBadge ativo={professor.ativo} />
