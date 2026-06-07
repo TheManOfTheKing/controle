@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/types/database';
+import { isValidCPF, maskCPF, maskCEP } from '@/lib/utils';
 
 type PessoalRow = Database['public']['Tables']['pessoal']['Row'];
 
@@ -51,9 +52,9 @@ function CurrencyInput({ value, onChange, className, placeholder }: {
 const schema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   cargo: z.string().optional().nullable(),
-  email: z.string().email('E-mail inválido').optional().or(z.literal('')).transform(v => v === '' ? null : v),
+  email: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().email('E-mail inválido').optional().or(z.literal('')).transform(v => (!v || v === '') ? null : v)),
   telefone: z.string().optional().nullable(),
-  documento: z.string().optional().nullable(),
+  documento: z.preprocess(v => (typeof v === 'string' ? v.trim() : v), z.string().nullable().optional().transform(v => (!v || v === '') ? null : v).refine(v => v === null || isValidCPF(v), 'CPF inválido')),
   salario: z.number().optional().nullable(),
   data_admissao: z.string().optional().nullable(),
   data_demissao: z.string().optional().nullable(),
@@ -192,6 +193,14 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
     }
   };
 
+  const onInvalid = (formErrors: any) => {
+    console.error("Erros de validação Zod:", formErrors);
+    const firstErrorMsg = Object.values(formErrors)[0] 
+      ? (Object.values(formErrors)[0] as any).message 
+      : "Algum campo preenchido está inválido";
+    toast.error(`Não foi possível salvar: ${firstErrorMsg}`);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] bg-slate-950 text-slate-100 border-slate-800 max-h-[90vh] overflow-y-auto">
@@ -202,7 +211,7 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit, onInvalid)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2 sm:col-span-1">
               <Label htmlFor="nome">Nome Completo *</Label>
@@ -229,8 +238,13 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="documento">Documento (CPF/RG)</Label>
-              <Input id="documento" {...register('documento')} placeholder="000.000.000-00" className="bg-slate-900 border-slate-800" />
+              <Label htmlFor="documento">Documento (CPF)</Label>
+              <Input id="documento" {...register('documento', {
+                onChange: (e) => {
+                  e.target.value = maskCPF(e.target.value);
+                }
+              })} placeholder="000.000.000-00" className="bg-slate-900 border-slate-800" />
+              {errors.documento && <p className="text-sm text-red-500">{errors.documento.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="salario">Salário Base (R$) - Confidencial</Label>
@@ -279,7 +293,11 @@ export function PessoalForm({ open, onOpenChange, funcionario, onSubmit }: Pesso
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cep">CEP</Label>
-                <Input id="cep" {...register('cep')} placeholder="00000-000" className="bg-slate-950 border-slate-800" maxLength={9} />
+                <Input id="cep" {...register('cep', {
+                  onChange: (e) => {
+                    e.target.value = maskCEP(e.target.value);
+                  }
+                })} placeholder="00000-000" className="bg-slate-950 border-slate-800" maxLength={9} />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="logradouro">Logradouro</Label>
