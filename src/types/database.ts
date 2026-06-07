@@ -90,7 +90,7 @@ export type Database = {
             foreignKeyName: "aulas_monitor_id_fkey"
             columns: ["monitor_id"]
             isOneToOne: false
-            referencedRelation: "pessoal"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

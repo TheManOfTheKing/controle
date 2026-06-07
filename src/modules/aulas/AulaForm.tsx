@@ -23,7 +23,7 @@ const schema = z.object({
   data_hora: z.string().min(1, 'Data e Hora são obrigatórias'),
   duracao_minutos: z.coerce.number().min(1, 'Duração deve ser maior que 0'),
   link_transmissao: z.string().optional().nullable(),
-  status: z.enum(['agendada','confirmada','material_enviado','material_postado','aula_postada','cancelada']).default('agendada'),
+  status: z.enum(['agendada','confirmada','material_enviado','material_postado','aula_postada','cancelada','realizada','reagendada','em_andamento']).default('agendada'),
   gravacao_url: z.string().optional().nullable(),
   observacoes: z.string().optional().nullable(),
   monitor_id: z.string().uuid().optional().nullable().or(z.literal('')),
